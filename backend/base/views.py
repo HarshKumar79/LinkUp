@@ -1,6 +1,6 @@
 from rest_framework.response import Response
-from .serializers import MyUserProfileSerializer, UserRegisterSerializer, PostSerializer, UserSerializer
-from .models import Myuser,Post
+from .serializers import MyUserProfileSerializer, UserRegisterSerializer, PostSerializer, UserSerializer, CommentSerializer
+from .models import Myuser,Post, Comments
 from rest_framework.decorators import api_view, permission_classes, parser_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
@@ -208,10 +208,8 @@ def create_post(request):
     try:
         data = request.data
 
-        # Get the description
         description = data.get('description', '').strip()
-        
-        # Handle the image file (optional)
+
         image = request.FILES.get('image')
 
         if not description:
@@ -220,7 +218,6 @@ def create_post(request):
         if len(description) < 5:  # Optional: minimum length check for description
             return Response({"error": "Description must be at least 5 characters long."}, status=400)
 
-        # Check if user exists
         try:
             user = Myuser.objects.get(username=request.user.username)
         except Myuser.DoesNotExist:
@@ -342,3 +339,23 @@ def delete_post(request, post_id):
 
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def create_comment(request):
+    post_id = request.data.get('post_id')
+    comment_text = request.data.get('comment')
+    try:
+        post = Post.objects.get(id=post_id)
+        comment = Comments(user=request.user, post=post, comment=comment_text)
+        comment.save()
+        serializer = CommentSerializer(comment)
+        return Response(serializer.data)
+    except Post.DoesNotExist:
+        return Response({'error': 'Post not found'}, status=404)
+    
+@api_view(['GET'])
+def get_comments(request, post_id):
+    comments = Comments.objects.filter(post_id=post_id)
+    serializer = CommentSerializer(comments, many=True)
+    return Response(serializer.data)

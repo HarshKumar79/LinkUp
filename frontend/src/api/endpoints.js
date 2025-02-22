@@ -119,3 +119,18 @@ export const delete_post = async (post_id) => {
     const response = await api.delete(`/delete_post/${post_id}/`);
     return response.data;
 };
+
+export const create_comment = async (formData) => {
+    const response = await api.post('/create_comment/', formData, {
+        headers: {
+            'Content-Type': 'multipart/form-data',
+        },
+    });
+    
+    return response.data;
+};
+
+export const get_comments = async (postId) => {
+    const response = await api.get(`/posts/${postId}/comments/`);
+    return response.data;
+};

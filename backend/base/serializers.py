@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Myuser, Post
+from .models import Myuser, Post, Comments
 
 from rest_framework import serializers
 
@@ -68,6 +68,24 @@ class PostSerializer(serializers.ModelSerializer):
             request = self.context.get('request')
             return request.build_absolute_uri(obj.image.url)
         return None
+    
+class CommentSerializer(serializers.ModelSerializer): 
+
+    username = serializers.SerializerMethodField()
+    comment_like_count = serializers.SerializerMethodField()
+    formatted_date = serializers.SerializerMethodField()
+    class Meta:
+        model = Comments
+        fields = ['id','username', 'comment', 'formatted_date', 'likes', 'comment_like_count', 'post']
+    
+    def get_username(self, obj):
+        return obj.user.username
+    
+    def get_comment_like_count(self, obj):
+        return obj.likes.count()
+    
+    def get_formatted_date(self, obj):  
+        return obj.created_at.strftime("%d %b %y")
     
 class UserSerializer(serializers.ModelSerializer):
     class Meta:

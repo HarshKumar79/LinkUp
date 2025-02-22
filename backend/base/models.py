@@ -16,3 +16,10 @@ class Post(models.Model):
     created_at = models.DateField(auto_now_add=True)
     likes = models.ManyToManyField(Myuser, related_name='post_likes', blank=True)
     image = models.ImageField(upload_to='post_images/', null=True, blank=True)  # Add the ImageField
+
+class Comments(models.Model):
+    user = models.ForeignKey(Myuser, on_delete=models.CASCADE, related_name='comments')
+    comment = models.CharField(max_length=400)
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='comments')
+    created_at = models.DateField(auto_now_add=True)
+    likes = models.ManyToManyField(Myuser, related_name='comment_likes', blank=True)
