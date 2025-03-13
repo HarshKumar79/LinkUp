@@ -1,9 +1,13 @@
+# base/urls.py
 from django.urls import path
 from django.conf import settings
 from django.conf.urls.static import static
-from .views import get_user_profile_data,CustomTokenObtainPairView,CustomTokenRefreshView, register, authenticated, toggleFollow, get_users_posts, toggleLike, create_post, get_posts, search_users, update_user_details, logout, delete_post, create_comment, get_comments
-
-
+from .views import (
+    get_user_profile_data, CustomTokenObtainPairView, CustomTokenRefreshView, 
+    register, authenticated, toggleFollow, get_users_posts, toggleLike, 
+    create_post, get_posts, search_users, update_user_details, logout, 
+    delete_post, create_comment, get_comments, get_post, toggleLikeComment
+)
 
 urlpatterns = [
     path('user_data/<str:pk>/', get_user_profile_data),
@@ -12,17 +16,16 @@ urlpatterns = [
     path('register/', register),
     path('authenticated/', authenticated),
     path('toggle_follow/', toggleFollow),
-    path('posts/<str:pk>/', get_users_posts),
-    path('toggle_like/',toggleLike),
-    path('create_post/',create_post),
-    path('get_posts/',get_posts),
-    path('search/',search_users),
-    path('update_user/',update_user_details),
-    path('logout/',logout),
+    path('toggle_like/', toggleLike),
+    path('create_post/', create_post),
+    path('get_posts/', get_posts),
+    path('search/', search_users),
+    path('update_user/', update_user_details),
+    path('logout/', logout),
     path('delete_post/<int:post_id>/', delete_post),
-    path('create_comment/',create_comment),
-    path('posts/<int:post_id>/comments/',get_comments),
-
-
-
+    path('create_comment/', create_comment),
+    path('posts/<int:post_id>/', get_post),          
+    path('posts/<str:pk>/', get_users_posts),
+    path('posts/<int:post_id>/comments/', get_comments), 
+    path('toggle_like_comment/<int:comment_id>/', toggleLikeComment),       
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

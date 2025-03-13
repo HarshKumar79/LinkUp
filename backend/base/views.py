@@ -1,5 +1,5 @@
 from rest_framework.response import Response
-from .serializers import MyUserProfileSerializer, UserRegisterSerializer, PostSerializer, UserSerializer, CommentSerializer
+from .serializers import MyUserProfileSerializer, UserRegisterSerializer, PostSerializer, CommentSerializer
 from .models import Myuser,Post, Comments
 from rest_framework.decorators import api_view, permission_classes, parser_classes
 from rest_framework.permissions import IsAuthenticated
@@ -9,6 +9,7 @@ from rest_framework.exceptions import AuthenticationFailed
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from django.shortcuts import get_object_or_404
 from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.permissions import AllowAny
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -345,17 +346,63 @@ def delete_post(request, post_id):
 def create_comment(request):
     post_id = request.data.get('post_id')
     comment_text = request.data.get('comment')
+    parent_id = request.data.get('parent_id')
     try:
         post = Post.objects.get(id=post_id)
-        comment = Comments(user=request.user, post=post, comment=comment_text)
+        comment = Comments(
+            user=request.user,
+            post=post,
+            comment=comment_text,
+            parent_id=parent_id if parent_id else None
+        )
         comment.save()
-        serializer = CommentSerializer(comment)
+        serializer = CommentSerializer(comment, context={'request': request})
         return Response(serializer.data)
     except Post.DoesNotExist:
         return Response({'error': 'Post not found'}, status=404)
+    except Exception as e:
+        return Response({'error': str(e)}, status=500)
     
 @api_view(['GET'])
 def get_comments(request, post_id):
-    comments = Comments.objects.filter(post_id=post_id)
-    serializer = CommentSerializer(comments, many=True)
-    return Response(serializer.data)
+    try:
+        comments = Comments.objects.filter(post_id=post_id, parent__isnull=True).prefetch_related('replies')
+        serializer = CommentSerializer(comments, many=True, context={'request': request})
+        return Response(serializer.data)
+    except Exception as e:
+        return Response({'error': str(e)}, status=500)
+    
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def get_post(request, post_id):  # Removed @permission_classes([IsAuthenticated])
+    try:
+        post = Post.objects.get(id=post_id)
+        serializer = PostSerializer(post, context={'request': request})
+        data = serializer.data
+        # Add 'liked' field only if the user is authenticated
+        if request.user.is_authenticated:
+            try:
+                my_user = Myuser.objects.get(username=request.user.username)
+                data['liked'] = my_user.username in data['likes']
+            except Myuser.DoesNotExist:
+                data['liked'] = False  # Fallback if user doesn’t exist (shouldn’t happen)
+        else:
+            data['liked'] = False  # Default for unauthenticated users
+        return Response(data)
+    except Post.DoesNotExist:
+        return Response({'error': 'Post not found'}, status=404)
+    
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def toggleLikeComment(request, comment_id):  # Fixed typo in URL name
+    try:
+        comment = Comments.objects.get(id=comment_id)
+        if request.user in comment.likes.all():
+            comment.likes.remove(request.user)
+            liked = False
+        else:
+            comment.likes.add(request.user)
+            liked = True
+        return Response({'liked': liked, 'comment_like_count': comment.likes.count()})
+    except Comments.DoesNotExist:
+        return Response({'error': 'Comment not found'}, status=404)

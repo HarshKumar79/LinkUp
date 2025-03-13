@@ -52,7 +52,9 @@ class PostSerializer(serializers.ModelSerializer):
     image_url = serializers.SerializerMethodField()
     class Meta:
         model = Post
-        fields = ['id','username', 'description', 'formatted_date', 'likes', 'like_count',  'image_url']
+        fields = [
+            'id', 'username', 'description', 'formatted_date', 'likes', 'like_count', 
+            'image_url']
     
     def get_username(self, obj):
         return obj.user.username
@@ -69,25 +71,40 @@ class PostSerializer(serializers.ModelSerializer):
             return request.build_absolute_uri(obj.image.url)
         return None
     
-class CommentSerializer(serializers.ModelSerializer): 
-
+class CommentSerializer(serializers.ModelSerializer):
     username = serializers.SerializerMethodField()
+    profile_image = serializers.SerializerMethodField()  # Add for frontend
     comment_like_count = serializers.SerializerMethodField()
     formatted_date = serializers.SerializerMethodField()
+    liked = serializers.SerializerMethodField()  # Add for frontend
+    replies = serializers.SerializerMethodField()
+
     class Meta:
         model = Comments
-        fields = ['id','username', 'comment', 'formatted_date', 'likes', 'comment_like_count', 'post']
-    
+        fields = ['id', 'username', 'profile_image', 'comment', 'formatted_date', 'likes', 
+                  'comment_like_count', 'post', 'parent', 'replies', 'liked']
+
     def get_username(self, obj):
         return obj.user.username
-    
+
+    def get_profile_image(self, obj):
+        request = self.context.get('request')
+        if obj.user.profile_image and request:
+            return request.build_absolute_uri(obj.user.profile_image.url)
+        return None
+
     def get_comment_like_count(self, obj):
         return obj.likes.count()
-    
-    def get_formatted_date(self, obj):  
+
+    def get_formatted_date(self, obj):
         return obj.created_at.strftime("%d %b %y")
-    
-class UserSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Myuser
-        fields = ['username', 'bio', 'email', 'profile_image', 'first_name', 'last_name']
+
+    def get_liked(self, obj):
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            return obj.likes.filter(username=request.user.username).exists()
+        return False
+
+    def get_replies(self, obj):
+        replies = obj.replies.all()
+        return CommentSerializer(replies, many=True, context=self.context).data
