@@ -390,7 +390,7 @@ const Post = ({ id, username, description, formatted_date, liked, like_count, im
                                   />
                                   <Box>
                                     <HStack spacing={2} align="baseline">
-                                      <Text fontWeight="600" fontSize="xs">
+                                      <Text fontWeight="600" fontSize="xs" >
                                         @{reply.username}
                                       </Text>
                                       <Text fontSize="xs" color="gray.500">
@@ -442,6 +442,7 @@ const Post = ({ id, username, description, formatted_date, liked, like_count, im
                 <Input 
                   placeholder={replyToComment ? `Replying to @${replyToCommentUsername}` : "Add a comment..."}
                   value={newComment}
+                  _placeholder={{ opacity: 1, color: 'gray.800' }}
                   onChange={(e) => setNewComment(e.target.value)}
                   size="sm"
                   borderRadius="full"

@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Myuser, Post, Comments
+from .models import Myuser, Post, Comments, Notification
 
 from rest_framework import serializers
 
@@ -108,3 +108,8 @@ class CommentSerializer(serializers.ModelSerializer):
     def get_replies(self, obj):
         replies = obj.replies.all()
         return CommentSerializer(replies, many=True, context=self.context).data
+
+class NotificationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Notification
+        fields = ['id', 'message', 'read', 'created_at', 'data']

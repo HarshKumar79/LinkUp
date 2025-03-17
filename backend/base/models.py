@@ -28,3 +28,13 @@ class Comments(models.Model):
 
     def __str__(self):
         return f"Comment by {self.user.username} on {self.post.id}"
+
+class Notification(models.Model):
+    user = models.ForeignKey(Myuser, on_delete=models.CASCADE, related_name='notifications')
+    message = models.CharField(max_length=255)
+    read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    data = models.JSONField(default=dict)  # e.g., {'post_id': 1, 'comment_id': 5}
+
+    def __str__(self):
+        return f"{self.message} for {self.user.username}"

@@ -6,7 +6,8 @@ from .views import (
     get_user_profile_data, CustomTokenObtainPairView, CustomTokenRefreshView, 
     register, authenticated, toggleFollow, get_users_posts, toggleLike, 
     create_post, get_posts, search_users, update_user_details, logout, 
-    delete_post, create_comment, get_comments, get_post, toggleLikeComment
+    delete_post, create_comment, get_comments, get_post, toggleLikeComment,
+    get_notifications
 )
 
 urlpatterns = [
@@ -27,5 +28,6 @@ urlpatterns = [
     path('posts/<int:post_id>/', get_post),          
     path('posts/<str:pk>/', get_users_posts),
     path('posts/<int:post_id>/comments/', get_comments), 
-    path('toggle_like_comment/<int:comment_id>/', toggleLikeComment),       
+    path('toggle_like_comment/<int:comment_id>/', toggleLikeComment), 
+    path('notifications/', get_notifications),      
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

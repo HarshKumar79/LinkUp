@@ -144,3 +144,8 @@ export const toggleLikeComment = async (commentId) => {
     const response = await api.post(`/toggle_like_comment/${commentId}/`);  // Fixed URL
     return response.data;
 };
+
+export const get_notifications = async () => {
+    const response = await api.get('/notifications/');
+    return response.data;
+};

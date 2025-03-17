@@ -1,6 +1,6 @@
 from rest_framework.response import Response
-from .serializers import MyUserProfileSerializer, UserRegisterSerializer, PostSerializer, CommentSerializer
-from .models import Myuser,Post, Comments
+from .serializers import MyUserProfileSerializer, UserRegisterSerializer, PostSerializer, CommentSerializer, NotificationSerializer
+from .models import Myuser,Post, Comments, Notification
 from rest_framework.decorators import api_view, permission_classes, parser_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
@@ -10,6 +10,8 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from django.shortcuts import get_object_or_404
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.permissions import AllowAny
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -185,23 +187,34 @@ def get_users_posts(request, pk):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def toggleLike(request):
-    try:
-        post_id = request.data.get('id')
-        if not post_id:
-            return Response({'error': 'Post ID is required'}, status=status.HTTP_400_BAD_REQUEST)
+    post_id = request.data.get('id')
+    post = Post.objects.get(id=post_id)
+    user = request.user
 
-        post = get_object_or_404(Post, id=post_id)
-        user = get_object_or_404(Myuser, username=request.user.username)
-
-        if user in post.likes.all():
-            post.likes.remove(user)
-            return Response({'now_liked': False}, status=status.HTTP_200_OK)
-        else:
-            post.likes.add(user)
-            return Response({'now_liked': True}, status=status.HTTP_200_OK)
-
-    except Exception as e:
-        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    if user in post.likes.all():
+        post.likes.remove(user)
+        now_liked = False
+    else:
+        post.likes.add(user)
+        now_liked = True
+        # Notify post owner
+        notification = Notification(
+            user=post.user,
+            message=f"{user.username} liked your post",
+            data={'post_id': post_id}
+        )
+        notification.save()
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            f'user_{post.user.username}',
+            {
+                'type': 'send_notification',
+                'message': notification.message,
+                'data': notification.data,
+                'id': notification.id
+            }
+        )
+    return Response({'now_liked': now_liked})
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
@@ -356,12 +369,30 @@ def create_comment(request):
             parent_id=parent_id if parent_id else None
         )
         comment.save()
+
+        # Create and send notification
+        notification = Notification(
+            user=post.user,
+            message=f"{request.user.username} commented on your post: '{comment_text[:50]}'",
+            data={'post_id': post_id, 'comment_id': comment.id}
+        )
+        notification.save()
+
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            f'user_{post.user.username}',
+            {
+                'type': 'send_notification',
+                'message': notification.message,
+                'data': notification.data,
+                'id': notification.id
+            }
+        )
+
         serializer = CommentSerializer(comment, context={'request': request})
         return Response(serializer.data)
     except Post.DoesNotExist:
         return Response({'error': 'Post not found'}, status=404)
-    except Exception as e:
-        return Response({'error': str(e)}, status=500)
     
 @api_view(['GET'])
 def get_comments(request, post_id):
@@ -406,3 +437,10 @@ def toggleLikeComment(request, comment_id):  # Fixed typo in URL name
         return Response({'liked': liked, 'comment_like_count': comment.likes.count()})
     except Comments.DoesNotExist:
         return Response({'error': 'Comment not found'}, status=404)
+    
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_notifications(request):
+    notifications = Notification.objects.filter(user=request.user).order_by('-created_at')
+    serializer = NotificationSerializer(notifications, many=True)
+    return Response(serializer.data)
