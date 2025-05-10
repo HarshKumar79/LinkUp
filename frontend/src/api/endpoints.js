@@ -1,6 +1,6 @@
 import axios from "axios";
 import { SERVER_URL } from "../constants/constants";
-import { StepDescription } from "@chakra-ui/react";
+
 
 // Define the base URL for the API
 const BASE_URL = SERVER_URL
@@ -117,5 +117,35 @@ export const get_post_image = async (username) => {
 
 export const delete_post = async (post_id) => {
     const response = await api.delete(`/delete_post/${post_id}/`);
+    return response.data;
+};
+
+export const create_comment = async (formData) => {
+    const response = await api.post('/create_comment/', formData, {
+        headers: {
+            'Content-Type': 'multipart/form-data',
+        },
+    });
+    
+    return response.data;
+};
+
+export const get_comments = async (postId) => {
+    const response = await api.get(`/posts/${postId}/comments/`);
+    return response.data;
+};
+
+export const get_post = async (postId) => {
+    const response = await api.get(`/posts/${postId}/`);
+    return response.data;
+};
+
+export const toggleLikeComment = async (commentId) => {
+    const response = await api.post(`/toggle_like_comment/${commentId}/`);  // Fixed URL
+    return response.data;
+};
+
+export const get_notifications = async () => {
+    const response = await api.get('/notifications/');
     return response.data;
 };

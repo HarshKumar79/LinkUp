@@ -1,0 +1,8 @@
+Django
+djangorestframework
+djangorestframework-simplejwt
+djangorestframework-pagination
+djangorestframework-filters
+djangorestframework-jwt
+Pillow
+django-cors-headers

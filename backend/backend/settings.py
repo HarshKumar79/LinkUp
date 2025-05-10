@@ -35,18 +35,21 @@ SIMPLE_JWT = {
 }
 
 # Application definition
-
+ASGI_APPLICATION = "backend.asgi.application"
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
+    'daphne',
     'django.contrib.staticfiles',
     'rest_framework',
     'rest_framework_simplejwt',
     'corsheaders',
     'base',
+    'channels',
+    
 ]
 
 REST_FRAMEWORK = {
@@ -72,6 +75,8 @@ MIDDLEWARE = [
 CORS_ALLOWED_ORIGINS = ['http://localhost:3000']
 
 CORS_ALLOW_CREDENTIALS = True 
+SESSION_COOKIE_HTTPONLY = True
+CSRF_COOKIE_HTTPONLY = True
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
@@ -96,6 +101,14 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'backend.wsgi.application'
 
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            'hosts': [('127.0.0.1', 6379)],  # Redis server
+        },
+    },
+}
 
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases

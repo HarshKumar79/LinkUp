@@ -16,3 +16,25 @@ class Post(models.Model):
     created_at = models.DateField(auto_now_add=True)
     likes = models.ManyToManyField(Myuser, related_name='post_likes', blank=True)
     image = models.ImageField(upload_to='post_images/', null=True, blank=True)  # Add the ImageField
+
+
+class Comments(models.Model):
+    user = models.ForeignKey(Myuser, on_delete=models.CASCADE, related_name='comments')
+    comment = models.CharField(max_length=400)
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='comments')
+    created_at = models.DateField(auto_now_add=True)
+    likes = models.ManyToManyField(Myuser, related_name='comment_likes', blank=True)
+    parent = models.ForeignKey('self', null=True, blank=True, on_delete=models.CASCADE, related_name='replies')  # Add this
+
+    def __str__(self):
+        return f"Comment by {self.user.username} on {self.post.id}"
+
+class Notification(models.Model):
+    user = models.ForeignKey(Myuser, on_delete=models.CASCADE, related_name='notifications')
+    message = models.CharField(max_length=255)
+    read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    data = models.JSONField(default=dict)  # e.g., {'post_id': 1, 'comment_id': 5}
+
+    def __str__(self):
+        return f"{self.message} for {self.user.username}"
